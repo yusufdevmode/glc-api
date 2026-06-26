@@ -30,6 +30,8 @@ class TestController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
 
+            'group' => 'nullable|string|max:255',
+
             'category' => 'required|in:P,A',
 
             'type' => 'required|in:PG,ES,IP,PW',
@@ -45,6 +47,7 @@ class TestController extends Controller
 
         $test = Test::create([
             'name' => $validated['name'],
+            'group' => $validated['group'] ?? null,
             'category' => $validated['category'],
             'type' => $validated['type'],
             'duration' => $validated['duration'],
@@ -83,6 +86,8 @@ class TestController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
 
+            'group' => 'nullable|string|max:255',
+
             'category' => 'required|in:P,A',
 
             'type' => 'required|in:PG,ES,IP,PW',
@@ -98,6 +103,7 @@ class TestController extends Controller
 
         $test->update([
             'name' => $validated['name'],
+            'group' => $validated['group'] ?? null,
             'category' => $validated['category'],
             'type' => $validated['type'],
             'duration' => $validated['duration'],

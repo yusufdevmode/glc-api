@@ -58,6 +58,11 @@ Route::middleware('auth:sanctum')->group(function () {
         [PackageTestController::class, 'store']
     );
 
+    Route::put(
+        '/packages/{package}/tests/{test}',
+        [PackageTestController::class, 'update']
+    );
+
     Route::delete(
         '/packages/{package}/tests/{test}',
         [PackageTestController::class, 'destroy']

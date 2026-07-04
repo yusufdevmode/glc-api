@@ -15,18 +15,44 @@ class PackageTestController extends Controller
 
         $validated = $request->validate([
             'test_id' => 'required|exists:tests,id',
-            'sort_order' => 'nullable'
+            'sort_order' => 'nullable|integer'
         ]);
 
         $package->tests()->sync([
-    $validated['test_id'] => [
-        'sort_order' => $validated['sort_order']
-    ]
-], false);
+            $validated['test_id'] => [
+                'sort_order' => $validated['sort_order'] ?? 0
+            ]
+        ], false);
 
         return response()->json([
             'success' => true,
             'message' => 'Test berhasil ditambahkan ke package'
+        ]);
+    }
+
+    public function update(
+        Request $request,
+        Package $package,
+        $testId
+    ) {
+        $validated = $request->validate([
+            'sort_order' => 'required|integer',
+        ]);
+
+        if (! $package->tests()->where('tests.id', $testId)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Test tidak ditemukan di package'
+            ], 404);
+        }
+
+        $package->tests()->updateExistingPivot($testId, [
+            'sort_order' => $validated['sort_order']
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sort order test berhasil diupdate'
         ]);
     }
 

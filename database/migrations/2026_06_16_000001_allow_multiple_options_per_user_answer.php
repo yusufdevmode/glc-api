@@ -11,6 +11,9 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('user_answers', function (Blueprint $table) {
+            $table->index('test_attempt_id', 'user_answers_test_attempt_id_index');
+            $table->index('question_id', 'user_answers_question_id_index');
+
             $table->dropUnique('user_answers_test_attempt_id_question_id_unique');
 
             $table->unique([
@@ -33,6 +36,9 @@ return new class () extends Migration {
                 'test_attempt_id',
                 'question_id',
             ]);
+
+            $table->dropIndex('user_answers_test_attempt_id_index');
+            $table->dropIndex('user_answers_question_id_index');
         });
     }
 };

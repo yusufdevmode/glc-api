@@ -8,12 +8,44 @@ use App\Http\Controllers\Controller;
 
 class PackageEnrollmentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $data = PackageEnrollment::with([
+        if ($request->has('startdate') && ! $request->has('start_date')) {
+            $request->merge(['start_date' => $request->query('startdate')]);
+        }
+
+        if ($request->has('enddate') && ! $request->has('end_date')) {
+            $request->merge(['end_date' => $request->query('enddate')]);
+        }
+
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'end_time' => 'nullable|in:all,with,without',
+        ]);
+
+        $query = PackageEnrollment::with([
             'user',
             'package'
-        ])->latest()->get();
+        ]);
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('start_time', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('start_time', '<=', $request->end_date);
+        }
+
+        if ($request->end_time === 'with') {
+            $query->whereNotNull('end_time');
+        }
+
+        if ($request->end_time === 'without') {
+            $query->whereNull('end_time');
+        }
+
+        $data = $query->latest()->get();
 
         return response()->json([
             'success' => true,

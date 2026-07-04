@@ -98,7 +98,7 @@ class TestAttemptController extends Controller
 
     public function update(Request $request, string $id)
     {
-        $attempt = TestAttempt::with('test')->findOrFail($id);
+        $attempt = TestAttempt::with('test.questions.options')->findOrFail($id);
 
         // Ambil semua jawaban user untuk attempt ini.
         $userAnswers = UserAnswer::where('test_attempt_id', $id)
@@ -109,7 +109,7 @@ class TestAttemptController extends Controller
             ->get();
 
         $correctAnswers = 0;
-        $score = 0;
+        $rawScore = 0;
 
         foreach ($userAnswers->groupBy('question_id') as $answers) {
             $question = $answers->first()->question;
@@ -147,13 +147,28 @@ class TestAttemptController extends Controller
             $correctAnswers++;
 
             if ($attempt->test->type == 'IP') {
-                $score += $correctOptions->sum(function ($option) {
+                $rawScore += $correctOptions->sum(function ($option) {
                     return $option->point ?? 0;
                 });
             } else {
-                $score++;
+                $rawScore++;
             }
         }
+
+        $maxRawScore = $attempt->test->type == 'IP'
+            ? $attempt->test->questions->sum(function ($question) {
+                return $question->options
+                    ->where('is_correct', 1)
+                    ->sum(function ($option) {
+                        return $option->point ?? 0;
+                    });
+            })
+            : $attempt->test->questions->count();
+
+        $maxScore = $attempt->test->weight ?? 100;
+        $score = $maxRawScore > 0
+            ? (int) round(($rawScore / $maxRawScore) * $maxScore)
+            : 0;
 
         // Update attempt
         $attempt->update([

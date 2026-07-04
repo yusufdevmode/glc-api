@@ -115,176 +115,176 @@ class QuestionController extends Controller
     }
 
     public function update(Request $request, string $id)
-{
-    $question = Question::findOrFail($id);
+    {
+        $question = Question::findOrFail($id);
 
-    $validated = $request->validate([
-        'test_id' => 'required|exists:tests,id',
-        'stimulus_id' => 'nullable|exists:stimuli,id',
-        'question_text' => 'required|string',
+        $validated = $request->validate([
+            'test_id' => 'required|exists:tests,id',
+            'stimulus_id' => 'nullable|exists:stimuli,id',
+            'question_text' => 'required|string',
 
-        // nullable supaya gambar lama tetap aman saat tidak upload file baru
-        'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-        'delete_image' => 'nullable|boolean',
+            // nullable supaya gambar lama tetap aman saat tidak upload file baru
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'delete_image' => 'nullable|boolean',
 
-        'type' => 'required|in:PG,ES,IP,PW',
-        'duration' => 'nullable|integer',
-        'point' => 'nullable|integer',
-        'order' => 'nullable|integer',
+            'type' => 'required|in:PG,ES,IP,PW',
+            'duration' => 'nullable|integer',
+            'point' => 'nullable|integer',
+            'order' => 'nullable|integer',
 
-        'options' => 'nullable|array',
-        'options.*.id' => 'nullable|exists:options,id',
-        'options.*.label' => 'required|string|max:5',
-        'options.*.option_text' => 'required|string',
-        'options.*.image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-        'options.*.delete_image' => 'nullable|boolean',
-        'options.*.is_correct' => 'required|boolean',
-        'options.*.point' => 'nullable|integer',
-    ]);
+            'options' => 'nullable|array',
+            'options.*.id' => 'nullable|exists:options,id',
+            'options.*.label' => 'required|string|max:5',
+            'options.*.option_text' => 'required|string',
+            'options.*.image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'options.*.delete_image' => 'nullable|boolean',
+            'options.*.is_correct' => 'required|boolean',
+            'options.*.point' => 'nullable|integer',
+        ]);
 
-    /**
-     * IMAGE HANDLER
-     *
-     * CASE:
-     * 1. Upload image baru -> replace
-     * 2. delete_image true -> delete image
-     * 3. image tidak dikirim -> keep image lama
-     */
+        /**
+         * IMAGE HANDLER
+         *
+         * CASE:
+         * 1. Upload image baru -> replace
+         * 2. delete_image true -> delete image
+         * 3. image tidak dikirim -> keep image lama
+         */
 
-    // default keep image lama
-    $validated['image'] = $question->image;
+        // default keep image lama
+        $validated['image'] = $question->image;
 
-    // upload image baru
-    if ($request->hasFile('image')) {
+        // upload image baru
+        if ($request->hasFile('image')) {
 
-        // hapus file lama
-        if (
-            $question->image &&
-            Storage::disk('public')->exists($question->image)
-        ) {
-            Storage::disk('public')->delete($question->image);
-        }
-
-        $file = $request->file('image');
-
-        $filename = time() . '_' . $file->getClientOriginalName();
-
-        $path = $file->storeAs(
-            'questions',
-            $filename,
-            'public'
-        );
-
-        $validated['image'] = $path;
-    }
-
-    // delete image
-    elseif ($request->boolean('delete_image')) {
-
-        if (
-            $question->image &&
-            Storage::disk('public')->exists($question->image)
-        ) {
-            Storage::disk('public')->delete($question->image);
-        }
-
-        $validated['image'] = null;
-    }
-
-    $question->update([
-        'test_id' => $validated['test_id'],
-        'stimulus_id' => $validated['stimulus_id'] ?? null,
-        'question_text' => $validated['question_text'],
-        'image' => $validated['image'],
-        'type' => $validated['type'],
-        'duration' => $validated['duration'] ?? null,
-        'point' => $validated['point'] ?? 0,
-        'order' => $validated['order'] ?? 0,
-    ]);
-
-    // update options
-    if (!empty($validated['options'])) {
-        $existingOptions = $question->options()->get();
-        $existingOptionsById = $existingOptions->keyBy('id');
-        $existingOptionsByIndex = $existingOptions->values();
-        $newOptions = [];
-        $keptImages = [];
-
-        foreach ($validated['options'] as $index => $item) {
-            $existingOption = null;
-
-            if (!empty($item['id'])) {
-                $existingOption = $existingOptionsById->get($item['id']);
-            }
-
-            if (!$existingOption) {
-                $existingOption = $existingOptionsByIndex->get($index);
-            }
-
-            $image = $existingOption?->image;
-
-            if ($request->hasFile("options.$index.image")) {
-                if (
-                    $existingOption?->image &&
-                    Storage::disk('public')->exists($existingOption->image)
-                ) {
-                    Storage::disk('public')->delete($existingOption->image);
-                }
-
-                $image = $this->storeOptionImage($request, $index);
-            } elseif (
-                $request->boolean("options.$index.delete_image")
-            ) {
-                if (
-                    $existingOption?->image &&
-                    Storage::disk('public')->exists($existingOption->image)
-                ) {
-                    Storage::disk('public')->delete($existingOption->image);
-                }
-
-                $image = null;
-            }
-
-            if ($image) {
-                $keptImages[] = $image;
-            }
-
-            $newOptions[] = [
-                'label' => $item['label'],
-                'option_text' => $item['option_text'],
-                'image' => $image,
-                'is_correct' => $item['is_correct'],
-                'point' => $item['point'] ?? 0,
-            ];
-        }
-
-        foreach ($existingOptions as $option) {
+            // hapus file lama
             if (
-                $option->image &&
-                !in_array($option->image, $keptImages, true) &&
-                Storage::disk('public')->exists($option->image)
+                $question->image &&
+                Storage::disk('public')->exists($question->image)
             ) {
-                Storage::disk('public')->delete($option->image);
+                Storage::disk('public')->delete($question->image);
+            }
+
+            $file = $request->file('image');
+
+            $filename = time() . '_' . $file->getClientOriginalName();
+
+            $path = $file->storeAs(
+                'questions',
+                $filename,
+                'public'
+            );
+
+            $validated['image'] = $path;
+        }
+
+        // delete image
+        elseif ($request->boolean('delete_image')) {
+
+            if (
+                $question->image &&
+                Storage::disk('public')->exists($question->image)
+            ) {
+                Storage::disk('public')->delete($question->image);
+            }
+
+            $validated['image'] = null;
+        }
+
+        $question->update([
+            'test_id' => $validated['test_id'],
+            'stimulus_id' => $validated['stimulus_id'] ?? null,
+            'question_text' => $validated['question_text'],
+            'image' => $validated['image'],
+            'type' => $validated['type'],
+            'duration' => $validated['duration'] ?? null,
+            'point' => $validated['point'] ?? 0,
+            'order' => $validated['order'] ?? 0,
+        ]);
+
+        // update options
+        if (!empty($validated['options'])) {
+            $existingOptions = $question->options()->get();
+            $existingOptionsById = $existingOptions->keyBy('id');
+            $existingOptionsByIndex = $existingOptions->values();
+            $newOptions = [];
+            $keptImages = [];
+
+            foreach ($validated['options'] as $index => $item) {
+                $existingOption = null;
+
+                if (!empty($item['id'])) {
+                    $existingOption = $existingOptionsById->get($item['id']);
+                }
+
+                if (!$existingOption) {
+                    $existingOption = $existingOptionsByIndex->get($index);
+                }
+
+                $image = $existingOption?->image;
+
+                if ($request->hasFile("options.$index.image")) {
+                    if (
+                        $existingOption?->image &&
+                        Storage::disk('public')->exists($existingOption->image)
+                    ) {
+                        Storage::disk('public')->delete($existingOption->image);
+                    }
+
+                    $image = $this->storeOptionImage($request, $index);
+                } elseif (
+                    $request->boolean("options.$index.delete_image")
+                ) {
+                    if (
+                        $existingOption?->image &&
+                        Storage::disk('public')->exists($existingOption->image)
+                    ) {
+                        Storage::disk('public')->delete($existingOption->image);
+                    }
+
+                    $image = null;
+                }
+
+                if ($image) {
+                    $keptImages[] = $image;
+                }
+
+                $newOptions[] = [
+                    'label' => $item['label'],
+                    'option_text' => $item['option_text'],
+                    'image' => $image,
+                    'is_correct' => $item['is_correct'],
+                    'point' => $item['point'] ?? 0,
+                ];
+            }
+
+            foreach ($existingOptions as $option) {
+                if (
+                    $option->image &&
+                    !in_array($option->image, $keptImages, true) &&
+                    Storage::disk('public')->exists($option->image)
+                ) {
+                    Storage::disk('public')->delete($option->image);
+                }
+            }
+
+            $question->options()->delete();
+
+            foreach ($newOptions as $item) {
+                $question->options()->create($item);
             }
         }
 
-        $question->options()->delete();
-
-        foreach ($newOptions as $item) {
-            $question->options()->create($item);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Question berhasil diupdate',
+            'data' => $question->load([
+                'stimulus',
+                'stimulus.test',
+                'options'
+            ])
+        ]);
     }
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Question berhasil diupdate',
-        'data' => $question->load([
-            'stimulus',
-            'stimulus.test',
-            'options'
-        ])
-    ]);
-}
 
     public function destroy(string $id)
     {

@@ -15,7 +15,7 @@ class TestController extends Controller
             'stimulus'
         ])
         ->withCount('questions')
-        ->latest()
+        ->orderBy('name')
         ->get();
 
         return response()->json([
@@ -40,6 +40,8 @@ class TestController extends Controller
 
             'passing_grade' => 'nullable|integer|min:0',
 
+            'weight' => 'nullable|integer|min:0|max:100',
+
             'description' => 'nullable|string',
 
             'order' => 'nullable|integer',
@@ -52,6 +54,7 @@ class TestController extends Controller
             'type' => $validated['type'],
             'duration' => $validated['duration'],
             'passing_grade' => $validated['passing_grade'] ?? 0,
+            'weight' => $validated['weight'] ?? null,
             'description' => $validated['description'] ?? null,
             'order' => $validated['order'] ?? 0,
         ]);
@@ -96,6 +99,8 @@ class TestController extends Controller
 
             'passing_grade' => 'nullable|integer|min:0',
 
+            'weight' => 'nullable|integer|min:0|max:100',
+
             'description' => 'nullable|string',
 
             'order' => 'nullable|integer',
@@ -108,6 +113,7 @@ class TestController extends Controller
             'type' => $validated['type'],
             'duration' => $validated['duration'],
             'passing_grade' => $validated['passing_grade'] ?? 0,
+            'weight' => $validated['weight'] ?? null,
             'description' => $validated['description'] ?? null,
             'order' => $validated['order'] ?? 0,
         ]);

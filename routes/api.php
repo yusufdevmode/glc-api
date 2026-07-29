@@ -1,17 +1,17 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\Api\TestController;
 use App\Http\Controllers\Api\OptionController;
 use App\Http\Controllers\Api\PackageController;
-use App\Http\Controllers\Api\QuestionController;
-use App\Http\Controllers\Api\TestAttemptController;
-use App\Http\Controllers\Api\UserAnswerController;
 use App\Http\Controllers\Api\PackageEnrollmentController;
 use App\Http\Controllers\Api\PackageTestController;
+use App\Http\Controllers\Api\QuestionController;
+use App\Http\Controllers\Api\TestAttemptController;
+use App\Http\Controllers\Api\TestController;
+use App\Http\Controllers\Api\UserAnswerController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\StimulusController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,9 +20,7 @@ use App\Http\Controllers\StimulusController;
 */
 
 Route::post('/register', [AuthController::class, 'register']);
-
 Route::post('/login', [AuthController::class, 'login']);
-
 Route::middleware('auth:sanctum')->group(function () {
 
     /*
@@ -30,7 +28,6 @@ Route::middleware('auth:sanctum')->group(function () {
     | AUTH
     |--------------------------------------------------------------------------
     */
-
 
     Route::get('/me', [AuthController::class, 'me']);
 
@@ -44,6 +41,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('user', UserController::class);
     Route::apiResource('packages', PackageController::class);
 
+    Route::post(
+        '/tests/{test}/generate-image-questions',
+        [TestController::class, 'generateImageQuestions']
+    );
+
     Route::apiResource('tests', TestController::class);
 
     Route::apiResource('questions', QuestionController::class);
@@ -51,7 +53,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('stimuli', StimulusController::class);
 
     Route::apiResource('options', OptionController::class);
-
 
     Route::post(
         '/packages/{package}/tests',

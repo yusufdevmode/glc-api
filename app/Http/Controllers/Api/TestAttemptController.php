@@ -129,6 +129,16 @@ class TestAttemptController extends Controller
                 continue;
             }
 
+            if ($attempt->test->type == 'IP') {
+                $rawScore += $question->options
+                    ->whereIn('id', $selectedOptionIds)
+                    ->sum(function ($option) {
+                        return $option->point ?? 0;
+                    });
+
+                continue;
+            }
+
             $correctOptions = $question->options
                 ->where('is_correct', 1);
 
@@ -146,29 +156,21 @@ class TestAttemptController extends Controller
 
             $correctAnswers++;
 
-            if ($attempt->test->type == 'IP') {
-                $rawScore += $correctOptions->sum(function ($option) {
-                    return $option->point ?? 0;
-                });
-            } else {
-                $rawScore++;
-            }
+            $rawScore++;
         }
 
-        $maxRawScore = $attempt->test->type == 'IP'
-            ? $attempt->test->questions->sum(function ($question) {
-                return $question->options
-                    ->where('is_correct', 1)
-                    ->sum(function ($option) {
-                        return $option->point ?? 0;
-                    });
-            })
-            : $attempt->test->questions->count();
+        $maxRawScore = $attempt->test->questions->count();
 
-        $maxScore = $attempt->test->weight ?? 100;
-        $score = $maxRawScore > 0
-            ? (int) round(($rawScore / $maxRawScore) * $maxScore)
-            : 0;
+        if ($attempt->test->type == 'IP') {
+            // Skala prioritas memiliki total poin mentah maksimal 2.000,
+            // sehingga skor akhirnya berada pada skala maksimal 20.
+            $score = (int) round($rawScore / 100);
+        } else {
+            $maxScore = $attempt->test->weight ?? 100;
+            $score = $maxRawScore > 0
+                ? (int) round(($rawScore / $maxRawScore) * $maxScore)
+                : 0;
+        }
 
         // Update attempt
         $attempt->update([
